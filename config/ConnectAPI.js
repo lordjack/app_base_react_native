@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const ConnectAPI = {
-  url: 'https://data.oesteorganicos.com.br/',
+  url: 'https://url.com/',
   dir: 'api/',
   getUrl: function () {
     return this.url;
