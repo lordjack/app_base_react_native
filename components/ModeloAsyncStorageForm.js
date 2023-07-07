@@ -217,7 +217,7 @@ export default function ModeloAsyncStorageForm({ route, navigation }) {
                   Deletar
                 </Button>
               ) : (
-                <> </>
+                <></>
               )}
             </Button.Group>
           </Stack>
