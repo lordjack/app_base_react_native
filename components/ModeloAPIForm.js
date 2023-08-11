@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react';
-import { useFocusEffect } from '@react-navigation/native';
+import { useState, useCallback } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import {
   FormControl,
   Input,
@@ -15,57 +15,80 @@ import {
   Flex,
   Image,
   useToast,
-} from 'native-base';
-import AlertMsg from './AlertMsg';
-import { SelectList } from 'react-native-dropdown-select-list';
-import { DatePickerModal } from 'react-native-paper-dates';
-import * as ImagePicker from 'expo-image-picker';
+} from "native-base";
+import AlertMsg from "./AlertMsg";
+import { SelectList } from "react-native-dropdown-select-list";
+//import { DatePickerModal } from 'react-native-paper-dates';
+import DateTimePickerModal from "react-native-modal-datetime-picker";
 
-import ConnectAPI from '../config/ConnectAPI';
-import FontAwesome from 'react-native-vector-icons/FontAwesome5';
+import * as ImagePicker from "expo-image-picker";
+
+import ConnectAPI from "../config/ConnectAPI";
+import FontAwesome from "react-native-vector-icons/FontAwesome5";
 
 export default function ModeloAPIForm({ route, navigation }) {
   const toast = useToast();
   const { item } = route.params;
-  //console.log(item);
-  const img = require('../assets/adicionar.png');
+  const img = require("../assets/adicionar.png");
+
+  const checkParamImg = () => {
+    if (item.length === 0 || item.imagem == null) {
+      //console.log('img');
+      return img;
+    } else if (item.imagem !== null && item.imagem.includes("https")) {
+      //console.log('Palavra "https" encontrada na URL');
+      return item.imagem;
+    } else {
+      return ConnectAPI.urlFile() + item.imagem;
+    }
+  };
 
   const [produto, setProduto] = useState({
-    id: '',
-    nome: '', 
-    preco: '',
-    unidade_medida_id: '',
-    tipo_produto_id: '',
-    imagem: '',
+    id: "",
+    nome: "",
+    preco: "",
+    unidade_medida_id: "",
+    tipo_produto_id: "",
+    imagem: "",
   });
 
   useFocusEffect(
     useCallback(() => {
       if (item) {
         setProduto({
-          id: item?.id || '',
-          nome: item?.nome || '',
-          preco: item?.preco || '',
-          unidade_medida_id: item?.unidade_medida_id || '',
-          tipo_produto_id: item?.tipo_produto_id || '',
-          // imagem: item.imagem ? ConnectAPI.urlFile() + item?.imagem : '',
+          id: item?.id || "",
+          nome: item?.nome || "",
+          preco: item?.preco || "",
+          unidade_medida_id: item?.unidade_medida_id || "",
+          tipo_produto_id: item?.tipo_produto_id || "",
+          imagem: checkParamImg(),
         });
+        console.log(item);
       }
     }, [item])
   );
 
-  const [dataInicio, setDataInicio] = useState('');
+  const [dataInicio, setDataInicio] = useState("");
   const [visivelDataInicio, setVisivelDataInicio] = useState(false);
   const [loading, setLoading] = useState(false);
   const [unidadeMedida, setUnidadeMedida] = useState([]);
   const [tipoProduto, setTipoProduto] = useState([]);
 
-  const [imagemForm, setImagemForm] = useState(produto.imagem || img);
+  const [imagemForm, setImagemForm] = useState(checkParamImg());
+
+  const hideDatePicker = () => {
+    setVisivelDataInicio(false);
+  };
+
+  const handleConfirm = (date) => {
+    console.warn("A date has been picked: ", date);
+    hideDatePicker();
+  };
 
   const loadData = async () => {
     try {
       // componente combobox = select
-      const responseUM = await ConnectAPI.call('unidade-medida');
+      const responseUM = await ConnectAPI.call("unidade-medida");
       let um = responseUM.data.map((item) => {
         return {
           key: item.id,
@@ -75,7 +98,7 @@ export default function ModeloAPIForm({ route, navigation }) {
       setUnidadeMedida(um);
 
       // componente combobox = select
-      const responseTP = await ConnectAPI.call('tipo-produto');
+      const responseTP = await ConnectAPI.call("tipo-produto");
       let tp = responseTP.data.map((item) => {
         return {
           key: item.id,
@@ -95,23 +118,32 @@ export default function ModeloAPIForm({ route, navigation }) {
   const saveData = async () => {
     try {
       var response = await ConnectAPI.call(
-        'produto', // nome da url
+        "produto", // nome da url
         produto, // objeto
-        'POST' // method
+        "POST" // method
       );
 
       // uploadImage();
-      console.log(response);
-
       if (response.success) {
-        navigation.push('ModeloAPIList');
+        navigation.push("ModeloAPIList");
       }
+      toast.show({
+        render: () => {
+          return (
+            <AlertMsg
+              status="success"
+              msg={{ titulo: "Registro Salvo com sucesso!" }}
+            />
+          );
+        },
+      });
     } catch (error) {
+      setProduto(produto);
       console.error(error);
       let msg = await ConnectAPI.errorCall(error);
       toast.show({
         render: () => {
-          return <AlertMsg error={msg} />;
+          return <AlertMsg status="error" msg={msg} />;
         },
       });
     }
@@ -120,18 +152,27 @@ export default function ModeloAPIForm({ route, navigation }) {
   const updateData = async () => {
     try {
       setProduto({ id: item.id });
-      console.log(produto);
       var response = await ConnectAPI.call(
-        'produto/' + item.id, // nome da url + id
+        "produto/" + item.id, // nome da url + id
         produto, // objeto
-        'POST' // method
+        "POST" // method
       );
-      console.log(response);
 
       if (response.success) {
-        navigation.push('ModeloAPIList');
+        navigation.push("ModeloAPIList");
+        toast.show({
+          render: () => {
+            return (
+              <AlertMsg
+                status="success"
+                msg={{ titulo: "Registro alterado com sucesso!" }}
+              />
+            );
+          },
+        });
       }
     } catch (error) {
+      setProduto(produto);
       console.error(error);
       let msg = await ConnectAPI.errorCall(error);
       toast.show({
@@ -147,9 +188,9 @@ export default function ModeloAPIForm({ route, navigation }) {
       setProduto({ id: produto.id });
 
       var response = await ConnectAPI.call(
-        'produto/' + item.id, // nome da url + id
+        "produto/" + item.id, // nome da url + id
         produto, // objeto
-        'DELETE' // method
+        "DELETE" // method
       );
       console.log(response);
     } catch (error) {
@@ -161,14 +202,14 @@ export default function ModeloAPIForm({ route, navigation }) {
         },
       });
     }
-    navigation.push('ModeloAPIList');
+    navigation.push("ModeloAPIList");
   };
 
   const selecionarImagem = async () => {
     let permissionResult =
       await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (permissionResult.granted === false) {
-      alert('Permission to access camera roll is required!');
+      alert("Permission to access camera roll is required!");
       return;
     }
     let result = await ImagePicker.launchImageLibraryAsync({
@@ -178,15 +219,17 @@ export default function ModeloAPIForm({ route, navigation }) {
     });
 
     if (!result.canceled) {
-      setImagemSelected(true);
-
       setImagemForm({
         uri: result.assets[0].uri,
       });
+      setProduto({
+        ...produto,
+        imagem: result.assets[0].uri,
+      });
 
-      // console.log('teste: ' + JSON.stringify(result.uri));
+      // console.log('teste: ' + JSON.stringify(produto));
     } else {
-      alert('Você não selecionou nenhuma imagem.');
+      alert("Você não selecionou nenhuma imagem.");
     }
   };
 
@@ -195,12 +238,12 @@ export default function ModeloAPIForm({ route, navigation }) {
       await storage.ref().child(objeto.imagem.path).delete();
     }
 
-    let path = 'image_' + objeto.id + '.jpg';
+    let path = "image_" + objeto.id + ".jpg";
 
     let objImagem = await storage
       .ref()
       .child(path)
-      .putString(imagemForm.uri, 'data_url')
+      .putString(imagemForm.uri, "data_url")
       .then(async (snapshot) => {
         //console.log('Uploaded Imagem!');
         return snapshot.ref.getDownloadURL().then(async (downloadUrl) => {
@@ -224,9 +267,10 @@ export default function ModeloAPIForm({ route, navigation }) {
           safeArea
           mt="4"
           w={{
-            base: '100%',
-            md: '25%',
-          }}>
+            base: "100%",
+            md: "25%",
+          }}
+        >
           <Box>
             <Pressable onPress={selecionarImagem}>
               <Flex alignSelf="center">
@@ -255,28 +299,34 @@ export default function ModeloAPIForm({ route, navigation }) {
           <Box>
             <FormControl>
               <FormControl.Label>Data Início</FormControl.Label>
-              <Pressable
-                onPress={() => {
-                  setVisivelDataInicio(true);
-                }}>
-                <Input
-                  name="data_inicio"
-                  value={dataInicio}
-                  placeholder="00/00/2000"
-                />
-              </Pressable>
-              <DatePickerModal
-                locale="pt"
-                mode="single"
-                visible={visivelDataInicio}
-                onDismiss={() => {
+              <Input
+                name="data_inicio"
+                value={dataInicio}
+                placeholder="00/00/2000"
+                onChangeText={(e) => setDataInicio(e)}
+                InputLeftElement={
+                  <Pressable
+                    onPress={() => setVisivelDataInicio(true)}
+                    overflow="hidden"
+                    px="2"
+                  >
+                    <Icon
+                      as={<FontAwesome name="calendar" />}
+                      size={5}
+                      ml="2"
+                      color="muted.400"
+                    />
+                  </Pressable>
+                }
+              />
+              <DateTimePickerModal
+                isVisible={visivelDataInicio}
+                mode="date"
+                onConfirm={(date) => {
+                  setDataInicio(date.toLocaleDateString("pt-BR"));
                   setVisivelDataInicio(false);
                 }}
-                date={dataInicio}
-                onConfirm={(value) => {
-                  setVisivelDataInicio(false);
-                  setDataInicio(value.date.toLocaleDateString('pt-BR'));
-                }}
+                onCancel={() => setVisivelDataInicio(false)}
               />
             </FormControl>
           </Box>
@@ -301,13 +351,13 @@ export default function ModeloAPIForm({ route, navigation }) {
                 boxStyles={{
                   borderRadius: 5,
                   borderWidth: 1,
-                  borderColor: '#d9d9d9',
+                  borderColor: "#d9d9d9",
                   padding: 8,
                 }} //override default styles
                 dropdownStyles={{
                   borderRadius: 5,
                   borderWidth: 1,
-                  borderColor: '#d9d9d9',
+                  borderColor: "#d9d9d9",
                   padding: 8,
                 }}
               />
@@ -333,13 +383,13 @@ export default function ModeloAPIForm({ route, navigation }) {
                 boxStyles={{
                   borderRadius: 5,
                   borderWidth: 1,
-                  borderColor: '#d9d9d9',
+                  borderColor: "#d9d9d9",
                   padding: 8,
                 }} //override default styles
                 dropdownStyles={{
                   borderRadius: 5,
                   borderWidth: 1,
-                  borderColor: '#d9d9d9',
+                  borderColor: "#d9d9d9",
                   padding: 5,
                 }}
               />
@@ -356,7 +406,8 @@ export default function ModeloAPIForm({ route, navigation }) {
                 placeholder="1.99"
               />
               <FormControl.ErrorMessage
-                leftIcon={<WarningOutlineIcon size="xs" />}>
+                leftIcon={<WarningOutlineIcon size="xs" />}
+              >
                 Texto inválido.
               </FormControl.ErrorMessage>
             </FormControl>
@@ -366,32 +417,36 @@ export default function ModeloAPIForm({ route, navigation }) {
             isAttached
             colorScheme="blue"
             mx={{
-              base: 'auto',
+              base: "auto",
               md: 10,
             }}
-            size="sm">
+            size="sm"
+          >
             <Button
               variant="subtle"
-              onPress={item == '' ? saveData : updateData}
-              startIcon={<Icon as={FontAwesome} name="save" size="sm" />}>
-              {item == '' ? 'Salvar' : 'Atualizar'}
+              onPress={item == "" ? saveData : updateData}
+              startIcon={<Icon as={FontAwesome} name="save" size="sm" />}
+            >
+              {item == "" ? "Salvar" : "Atualizar"}
             </Button>
             <Button
               variant="outline"
-              onPress={() => navigation.navigate('ModeloAPIList')}
-              startIcon={<Icon as={FontAwesome} name="arrow-left" size="sm" />}>
+              onPress={() => navigation.navigate("ModeloAPIList")}
+              startIcon={<Icon as={FontAwesome} name="arrow-left" size="sm" />}
+            >
               Voltar
             </Button>
-            {item !== '' ? (
+            {item !== "" ? (
               <Button
                 variant="subtle"
                 colorScheme="danger"
                 onPress={() => {
-                  if (confirm('Deseja remover o registro?')) {
+                  if (confirm("Deseja remover o registro?")) {
                     deleteData();
                   }
                 }}
-                startIcon={<Icon as={FontAwesome} name="trash" size="sm" />}>
+                startIcon={<Icon as={FontAwesome} name="trash" size="sm" />}
+              >
                 Deletar
               </Button>
             ) : (

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
+import AlertMsg from './AlertMsg';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import FontAwesome from 'react-native-vector-icons/FontAwesome5';
 import ConnectAPI from '../config/ConnectAPI';
@@ -19,6 +20,7 @@ import {
   Divider,
   useColorMode,
   ScrollView,
+  useToast,
 } from 'native-base';
 
 const SecondRoute = () => <Box flex={1} bg="violet.400" />;
@@ -28,6 +30,7 @@ const ThirdRoute = () => <Box flex={1} bg="red.400" />;
 const Tab = createMaterialTopTabNavigator();
 
 export default function ModeloAPIList({ navigation }) {
+  const toast = useToast();
   const [data, setData] = useState([]);
   const [search, setSearch] = useState('');
 
@@ -48,6 +51,32 @@ export default function ModeloAPIList({ navigation }) {
     }, [loadData])
   );
 
+  const deleteData = async (item) => {
+    try {
+      var response = await ConnectAPI.call(
+        'produto/' + item.id, // nome da url + id
+        item, // objeto
+        'DELETE' // method
+      );
+      console.log(response);
+      loadData();
+      let msg = { titulo: 'Excluido com sucesso!' };
+      toast.show({
+        render: () => {
+          return <AlertMsg status="success" msg={msg} />;
+        },
+      });
+    } catch (error) {
+      console.error(error);
+      let msg = await ConnectAPI.errorCall(error);
+      toast.show({
+        render: () => {
+          return <AlertMsg msg={msg} />;
+        },
+      });
+    }
+  };
+
   const dataFilter = data.filter(
     ({ nome }) => nome.toLowerCase()?.indexOf(search.toLowerCase()) > -1
   );
@@ -61,6 +90,7 @@ export default function ModeloAPIList({ navigation }) {
           <Input
             placeholder="Pesquisar"
             value={search}
+            //isFocused={true}
             onChangeText={(value) => setSearch(value)}
             // onClear={(text) => searchData('')}
             width="100%"
@@ -97,7 +127,7 @@ export default function ModeloAPIList({ navigation }) {
               }}
               onLongPress={() => {
                 if (confirm('Deseja remover o registro?')) {
-                  //deleteData(item.id);
+                  deleteData(item);
                 }
               }}
               rounded="8"
@@ -125,7 +155,7 @@ export default function ModeloAPIList({ navigation }) {
                       }}
                       color="coolGray.800"
                       bold>
-                      {item.nome}
+                      #{item.id} - {item.nome}
                     </Text>
                     <Text
                       color="coolGray.600"
@@ -157,7 +187,7 @@ export default function ModeloAPIList({ navigation }) {
         colorScheme="blue"
         size="lg"
         icon={<Icon as={FontAwesome} name="plus" size="sm" />}
-        onPress={() => navigation.navigate('ModeloAPIForm', { item: '' })}
+        onPress={() => navigation.navigate('ModeloAPIForm', { item: [] })}
       />
     </>
   );

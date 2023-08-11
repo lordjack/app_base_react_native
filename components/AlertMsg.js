@@ -11,10 +11,11 @@ import {
 } from 'native-base';
 
 export default function AlertMsg(props) {
-  console.log(props.error);
+  //console.log(props.msg);
+  const status = props.status ? props.status : 'error';
   return (
     <Center flex={1} px="3">
-      <Alert maxW="400" status="error" colorScheme="info">
+      <Alert maxW="400" status={status}>
         <VStack space={2} flexShrink={1} w="100%">
           <HStack
             flexShrink={1}
@@ -24,7 +25,7 @@ export default function AlertMsg(props) {
             <HStack flexShrink={1} space={2} alignItems="center">
               <Alert.Icon />
               <Text fontSize="md" fontWeight="medium" color="coolGray.800">
-                {props.error.titulo}
+                {props.msg.titulo}
               </Text>
             </HStack>
             <IconButton
@@ -43,7 +44,7 @@ export default function AlertMsg(props) {
             _text={{
               color: 'coolGray.600',
             }}>
-            {props.error.msg}
+            {props.msg.msg}
           </Box>
         </VStack>
       </Alert>
